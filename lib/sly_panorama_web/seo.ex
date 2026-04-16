@@ -67,6 +67,47 @@ defmodule SlyPanoramaWeb.SEO do
 
   def public_site_host?(_), do: false
 
+  @doc """
+  Hostname from `public_base_url/0` (the configured public site), or `:canonical_host` if the URL
+  has no host. This is the only hostname `CanonicalizeUrl` accepts without redirecting.
+  """
+  def canonical_public_host do
+    case URI.parse(public_base_url()) do
+      %URI{host: h} when is_binary(h) ->
+        h = String.trim(h)
+        if h != "", do: h, else: canonical_host_fallback()
+
+      _ ->
+        canonical_host_fallback()
+    end
+  end
+
+  defp canonical_host_fallback do
+    case Application.get_env(:sly_panorama, :canonical_host, "") do
+      h when is_binary(h) ->
+        h = String.trim(h)
+        if h != "", do: h, else: nil
+
+      _ ->
+        nil
+    end
+  end
+
+  @doc """
+  True when `request_host` is exactly the canonical public hostname (case-insensitive).
+
+  `www.example.com` and `example.com` are **not** equivalent here — use `PUBLIC_BASE_URL`'s host
+  as the single allowed form; the other redirects via `CanonicalizeUrl`.
+  """
+  def canonical_hostname?(request_host, preferred_host)
+      when is_binary(request_host) and is_binary(preferred_host) do
+    normalize_hostname(request_host) == normalize_hostname(preferred_host)
+  end
+
+  def canonical_hostname?(_, _), do: false
+
+  def normalize_hostname(h) when is_binary(h), do: h |> String.trim() |> String.downcase()
+
   defp apex_host(h) when is_binary(h) do
     h = h |> String.trim() |> String.downcase()
 

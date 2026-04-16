@@ -61,6 +61,8 @@ if config_env() == :prod do
   host = System.get_env("PHX_HOST") || "slypanorama.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
+  # `PUBLIC_BASE_URL` hostname is the only accepted `Host` when canonical redirect is on
+  # (e.g. `www` redirects to non-`www` if this URL uses the apex host).
   public_base_url =
     (System.get_env("PUBLIC_BASE_URL") || "https://slypanorama.com")
     |> String.trim()

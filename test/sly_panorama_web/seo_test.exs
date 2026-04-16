@@ -37,4 +37,40 @@ defmodule SlyPanoramaWeb.SEOTest do
       refute SlyPanoramaWeb.SEO.same_site_host?("other.com", "example.com")
     end
   end
+
+  describe "canonical_public_host/0 and canonical_hostname?/2" do
+    setup do
+      previous_base = Application.get_env(:sly_panorama, :public_base_url)
+      previous_canonical = Application.get_env(:sly_panorama, :canonical_host)
+
+      on_exit(fn ->
+        restore_env(:public_base_url, previous_base)
+        restore_env(:canonical_host, previous_canonical)
+      end)
+
+      :ok
+    end
+
+    test "canonical_public_host prefers host from public_base_url" do
+      Application.put_env(:sly_panorama, :public_base_url, "https://slypanorama.com")
+      Application.put_env(:sly_panorama, :canonical_host, "ignored.example")
+
+      assert SlyPanoramaWeb.SEO.canonical_public_host() == "slypanorama.com"
+    end
+
+    test "canonical_hostname? is strict about www vs apex" do
+      assert SlyPanoramaWeb.SEO.canonical_hostname?("slypanorama.com", "slypanorama.com")
+      assert SlyPanoramaWeb.SEO.canonical_hostname?("SlyPanorama.COM", "slypanorama.com")
+      refute SlyPanoramaWeb.SEO.canonical_hostname?("www.slypanorama.com", "slypanorama.com")
+      refute SlyPanoramaWeb.SEO.canonical_hostname?("slypanorama.com", "www.slypanorama.com")
+    end
+  end
+
+  defp restore_env(key, previous) do
+    if previous == nil do
+      Application.delete_env(:sly_panorama, key)
+    else
+      Application.put_env(:sly_panorama, key, previous)
+    end
+  end
 end

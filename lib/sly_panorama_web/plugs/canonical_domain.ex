@@ -6,31 +6,36 @@ defmodule SlyPanoramaWeb.Plugs.CanonicalizeUrl do
 
   def call(conn, _opts) do
     if Application.get_env(:sly_panorama, :enable_canonical_redirect, false) do
-      canonical = Application.get_env(:sly_panorama, :canonical_host, "")
-
-      cond do
-        not is_binary(canonical) or canonical == "" ->
-          conn
-
-        canonical_host?(conn.host, canonical) ->
-          conn
-
-        true ->
-          origin = SlyPanoramaWeb.SEO.public_base_url() |> String.trim_trailing("/")
-
-          conn
-          |> put_status(:moved_permanently)
-          |> redirect(external: origin <> conn.request_path)
-          |> halt()
-      end
+      canonicalize(conn)
     else
       conn
     end
   end
 
-  defp canonical_host?(host, canonical) do
-    host == "localhost" or
-      SlyPanoramaWeb.SEO.same_site_host?(host, canonical) or
-      SlyPanoramaWeb.SEO.public_site_host?(host)
+  defp canonicalize(conn) do
+    case SlyPanoramaWeb.SEO.canonical_public_host() do
+      nil ->
+        conn
+
+      preferred ->
+        host = conn.host
+
+        cond do
+          SlyPanoramaWeb.SEO.normalize_hostname(host) == "localhost" ->
+            conn
+
+          SlyPanoramaWeb.SEO.canonical_hostname?(host, preferred) ->
+            conn
+
+          true ->
+            location =
+              SlyPanoramaWeb.SEO.canonical_url(conn.request_path, conn.query_string)
+
+            conn
+            |> put_status(:moved_permanently)
+            |> redirect(external: location)
+            |> halt()
+        end
+    end
   end
 end
