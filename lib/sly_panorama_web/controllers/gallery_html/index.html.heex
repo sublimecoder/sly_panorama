@@ -1,0 +1,87 @@
+<div
+  id="gallery-page"
+  class="container gallery mx-auto px-4 py-8 sm:px-6"
+  data-gallery-images={@gallery_images_json}
+>
+  <%!-- Gallery Intro --%>
+  <section class="mx-auto mb-10 max-w-3xl space-y-4 text-center text-sly-ink">
+    <h2 class="text-xl font-semibold text-sly-ink">Gallery</h2>
+    <p class="text-sly-ink/90">
+      Still frames, set photography, and behind-the-scenes moments live here. Drop new files into
+      <code class="rounded bg-black/20 px-1.5 py-0.5 text-xs text-sly-ink/90">priv/static/images/gallery/</code>
+      and register them in <code class="rounded bg-black/20 px-1.5 py-0.5 text-xs text-sly-ink/90">SlyPanoramaWeb.GalleryController.get_images/0</code>.
+    </p>
+    <p class="text-sly-ink/90">
+      The grid and lightbox are ready; when the list is empty you will only see this message.
+    </p>
+  </section>
+
+  <%!-- Gallery Grid --%>
+  <div id="gallery-grid" class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <%= if @images == [] do %>
+      <div class="col-span-full rounded-2xl border border-dashed border-white/20 bg-sly-surface/40 px-6 py-16 text-center text-sly-ink-dim">
+        No gallery images yet.
+      </div>
+    <% else %>
+      <%= for {img, index} <- Enum.with_index(@images) do %>
+        <% {file, title} = img %>
+        <div
+          data-gallery-item
+          data-gallery-index={index}
+          class="group cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-sly-surface/80 shadow-lg transition duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-xl"
+        >
+          <figure class="m-0">
+            <img src={"/images/gallery/#{file}"} alt={title} class="h-64 w-full object-cover transition duration-500 group-hover:opacity-95" />
+          </figure>
+          <div class="border-t border-white/10 p-4">
+            <h2 class="text-center text-base font-medium text-sly-ink">{title}</h2>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%!-- Lightbox Modal --%>
+  <div
+    id="lightbox"
+    class="fixed inset-0 z-50 hidden bg-black/70 p-4 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="lightbox-title"
+  >
+    <div class="flex h-full w-full items-center justify-center">
+    <div class="lightbox-content relative w-full max-w-5xl rounded-2xl border border-white/10 bg-sly-surface shadow-2xl">
+      <button
+        type="button"
+        id="close-lightbox"
+        class="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full border border-white/20 bg-sly-elevated text-sly-ink transition hover:bg-sly-accent hover:text-white"
+        aria-label="Close"
+      >
+        <.icon name="hero-x-mark-mini" class="size-5 shrink-0" />
+      </button>
+
+      <figure class="m-0">
+        <img id="lightbox-img" src="" alt="" class="max-h-[80vh] w-full rounded-t-2xl object-contain py-4" />
+      </figure>
+
+      <div class="flex items-center justify-between gap-4 border-t border-white/10 px-4 py-4 sm:px-6">
+        <button
+          type="button"
+          id="prev-btn"
+          class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-sly-elevated px-4 py-2 text-sm font-semibold text-sly-ink transition hover:border-sly-accent hover:bg-sly-accent hover:text-white"
+        >
+          <.icon name="hero-chevron-left-mini" class="size-5 shrink-0" /> Prev
+        </button>
+        <h2 id="lightbox-title" class="mx-4 flex-1 text-center text-base font-semibold text-sly-ink sm:text-lg"></h2>
+        <button
+          type="button"
+          id="next-btn"
+          class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-sly-elevated px-4 py-2 text-sm font-semibold text-sly-ink transition hover:border-sly-accent hover:bg-sly-accent hover:text-white"
+        >
+          Next <.icon name="hero-chevron-right-mini" class="size-5 shrink-0" />
+        </button>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>

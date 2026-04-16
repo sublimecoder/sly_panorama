@@ -1,0 +1,7 @@
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Use your deployed origin (see PUBLIC_BASE_URL / SEO.public_base_url/0)
+Sitemap: https://slypanorama.com/sitemap.xml

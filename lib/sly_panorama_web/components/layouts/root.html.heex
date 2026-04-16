@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href={~p"/manifest.json"} />
+
+    <.live_title default="Sly Panorama — adult performer and content creator" suffix="">
+      {assigns[:page_title]}
+    </.live_title>
+
+    <meta name="description" content={assigns[:page_description] || SlyPanoramaWeb.SEO.default_description()}>
+    <meta :if={assigns[:page_keywords]} name="keywords" content={@page_keywords}>
+
+    <meta name="robots" content="index, follow">
+    <meta name="author" content={SlyPanoramaWeb.SEO.site_name()}>
+    <meta name="theme-color" content="#0c0c0c">
+    <meta name="application-name" content={SlyPanoramaWeb.SEO.site_name()}>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content={SlyPanoramaWeb.SEO.site_name()}>
+
+    <link rel="canonical" href={assigns[:canonical_url] || SlyPanoramaWeb.SEO.canonical_url("/")}>
+    <link rel="alternate" hreflang="en" href={assigns[:canonical_url] || SlyPanoramaWeb.SEO.canonical_url("/")}>
+
+    <meta property="og:site_name" content={SlyPanoramaWeb.SEO.site_name()}>
+    <meta property="og:locale" content="en_US">
+    <meta property="og:title" content={assigns[:page_title] || SlyPanoramaWeb.SEO.default_page_title()}>
+    <meta property="og:description" content={assigns[:page_description] || SlyPanoramaWeb.SEO.default_description()}>
+    <meta property="og:image" content={assigns[:og_image_url] || SlyPanoramaWeb.SEO.og_image_url()}>
+    <meta property="og:image:alt" content={SlyPanoramaWeb.SEO.site_name()}>
+    <meta property="og:url" content={assigns[:canonical_url] || SlyPanoramaWeb.SEO.canonical_url("/")}>
+    <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content={assigns[:page_title] || SlyPanoramaWeb.SEO.default_page_title()}>
+    <meta name="twitter:description" content={assigns[:page_description] || SlyPanoramaWeb.SEO.default_description()}>
+    <meta name="twitter:image" content={assigns[:og_image_url] || SlyPanoramaWeb.SEO.og_image_url()}>
+
+    <Layouts.website_json_ld />
+
+    <script src={"https://www.google.com/recaptcha/api.js?render=#{SlyPanorama.Recaptcha.site_key()}"}>
+    </script>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
+    </script>
+  </head>
+  <body class="min-h-screen bg-sly-bg text-sly-ink antialiased">
+    <Layouts.flash_group flash={Map.get(assigns, :flash, %{})} />
+    <header class="sticky top-0 z-40 border-b border-sly-accent/25 bg-sly-bg/92 text-sly-ink shadow-[0_1px_0_rgba(212,175,55,0.12)] backdrop-blur-md">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <a
+          href="/"
+          class="text-lg font-semibold tracking-tight text-sly-accent transition hover:text-sly-accent-hover"
+        >
+          Sly Panorama
+        </a>
+
+        <nav class="hidden items-center gap-8 text-sm font-medium text-sly-ink/90 lg:flex" aria-label="Main">
+          <a href="/" class="inline-flex items-center gap-2 transition hover:text-sly-accent">
+            <.icon name="hero-home-mini" class="size-5 shrink-0 opacity-90" /> Home
+          </a>
+          <a href="/booking" class="inline-flex items-center gap-2 transition hover:text-sly-accent">
+            <.icon name="hero-calendar-mini" class="size-5 shrink-0 opacity-90" /> Book a Scene
+          </a>
+          <a href="/gallery" class="inline-flex items-center gap-2 transition hover:text-sly-accent">
+            <.icon name="hero-photo-mini" class="size-5 shrink-0 opacity-90" /> Gallery
+          </a>
+        </nav>
+
+        <details class="relative lg:hidden">
+          <summary class="list-none [&::-webkit-details-marker]:hidden inline-flex cursor-pointer items-center gap-2 rounded-lg border border-sly-accent/30 px-3 py-2 text-sm font-medium text-sly-ink transition hover:border-sly-accent/50 hover:bg-sly-elevated/80">
+            <.icon name="hero-bars-3-mini" class="size-5 shrink-0" /> Menu
+          </summary>
+          <nav class="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-sly-accent/20 bg-sly-surface py-2 shadow-xl" aria-label="Mobile">
+            <a href="/" class="flex items-center gap-3 px-4 py-2.5 text-sm text-sly-ink hover:bg-sly-elevated">
+              <.icon name="hero-home-mini" class="size-5 shrink-0 text-sly-accent" /> Home
+            </a>
+            <a href="/booking" class="flex items-center gap-3 px-4 py-2.5 text-sm text-sly-ink hover:bg-sly-elevated">
+              <.icon name="hero-calendar-mini" class="size-5 shrink-0 text-sly-accent" /> Book a Scene
+            </a>
+            <a href="/gallery" class="flex items-center gap-3 px-4 py-2.5 text-sm text-sly-ink hover:bg-sly-elevated">
+              <.icon name="hero-photo-mini" class="size-5 shrink-0 text-sly-accent" /> Gallery
+            </a>
+          </nav>
+        </details>
+      </div>
+    </header>
+
+    {@inner_content}
+
+    <footer class="border-t border-sly-accent/15 bg-sly-surface/95 px-4 py-12 text-center text-sly-ink">
+      <div class="mx-auto flex max-w-6xl flex-col items-center gap-4">
+        <div
+          class="flex size-28 items-center justify-center rounded-full border-2 border-sly-accent/35 bg-gradient-to-br from-sly-bg to-sly-elevated text-xl font-bold tracking-tight text-sly-accent shadow-md shadow-black/40"
+          aria-hidden="true"
+        >
+          SP
+        </div>
+        <p class="font-semibold text-sly-ink">Sly Panorama</p>
+        <p class="text-sm text-sly-ink-dim">Copyright © <%= Date.utc_today().year %> — All rights reserved</p>
+      </div>
+    </footer>
+  </body>
+</html>

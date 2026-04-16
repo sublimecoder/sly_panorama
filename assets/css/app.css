@@ -1,0 +1,53 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/sly_panorama_web";
+
+/* Charcoal + antique gold — reads “luxury / adult” without flat black+yellow UI */
+@theme {
+  --color-sly-bg: oklch(11% 0.012 75);
+  --color-sly-surface: oklch(16% 0.014 72);
+  --color-sly-elevated: oklch(22% 0.018 70);
+  --color-sly-muted: oklch(52% 0.035 75);
+  --color-sly-accent: oklch(74% 0.12 82);
+  --color-sly-accent-hover: oklch(80% 0.13 84);
+  --color-sly-secondary: oklch(58% 0.09 55);
+  --color-sly-ink: oklch(97% 0.008 85);
+  --color-sly-ink-dim: oklch(62% 0.04 78);
+  --color-sly-danger: oklch(58% 0.2 25);
+  --color-sly-danger-bg: oklch(28% 0.08 22);
+  --color-sly-info-bg: oklch(24% 0.022 72);
+}
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available. */
+@plugin "../vendor/heroicons";
+
+@custom-variant phx-click-loading ([".phx-click-loading&", ".phx-click-loading &"]);
+@custom-variant phx-submit-loading ([".phx-submit-loading&", ".phx-submit-loading &"]);
+@custom-variant phx-change-loading ([".phx-change-loading&", ".phx-change-loading &"]);
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-root-id] { display: contents }
+
+/* This file is for your main application CSS */
+
+span.fieldset-label {
+  color: var(--color-sly-ink);
+  font-weight: 600;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="date"],
+input[type="url"],
+input[type="password"],
+input[type="search"],
+textarea,
+select {
+  color: oklch(16% 0.02 75);
+  background-color: oklch(98% 0.006 90);
+}
