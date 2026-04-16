@@ -41,6 +41,43 @@ defmodule SlyPanoramaWeb.SEO do
   end
 
   @doc """
+  True when two hostnames refer to the same site (case-insensitive, single leading `www.` ignored).
+  """
+  def same_site_host?(a, b) when is_binary(a) and is_binary(b) do
+    apex_host(a) == apex_host(b)
+  end
+
+  def same_site_host?(_, _), do: false
+
+  @doc """
+  True when `request_host` matches the host of `public_base_url` (including `www` variant).
+
+  Used by `CanonicalizeUrl` so a mis-set `PHX_HOST` (e.g. `.fly.dev` in Fly `[env]`) does not
+  redirect-loop when real traffic uses `PUBLIC_BASE_URL`'s domain.
+  """
+  def public_site_host?(request_host) when is_binary(request_host) do
+    case URI.parse(public_base_url()) do
+      %URI{host: pub} when is_binary(pub) and pub != "" ->
+        same_site_host?(request_host, pub)
+
+      _ ->
+        false
+    end
+  end
+
+  def public_site_host?(_), do: false
+
+  defp apex_host(h) when is_binary(h) do
+    h = h |> String.trim() |> String.downcase()
+
+    if String.starts_with?(h, "www.") do
+      String.slice(h, 4..-1//1)
+    else
+      h
+    end
+  end
+
+  @doc """
   Absolute URL for the canonical public site + path + optional query string.
   """
   def canonical_url(request_path, query_string \\ "")

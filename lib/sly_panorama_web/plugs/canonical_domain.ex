@@ -19,7 +19,8 @@ defmodule SlyPanoramaWeb.Plugs.CanonicalizeUrl do
           origin = SlyPanoramaWeb.SEO.public_base_url() |> String.trim_trailing("/")
 
           conn
-          |> redirect(external: origin <> conn.request_path, status: 301)
+          |> put_status(:moved_permanently)
+          |> redirect(external: origin <> conn.request_path)
           |> halt()
       end
     else
@@ -28,6 +29,8 @@ defmodule SlyPanoramaWeb.Plugs.CanonicalizeUrl do
   end
 
   defp canonical_host?(host, canonical) do
-    host == canonical or host == "www." <> canonical or host == "localhost"
+    host == "localhost" or
+      SlyPanoramaWeb.SEO.same_site_host?(host, canonical) or
+      SlyPanoramaWeb.SEO.public_site_host?(host)
   end
 end

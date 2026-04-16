@@ -10,7 +10,9 @@ kill_signal = 'SIGTERM'
 [build]
 
 [env]
-  PHX_HOST = 'sly-panorama.fly.dev'
+  # Must match the Host header for your public site (custom domain). If this is the Fly
+  # default hostname while users hit e.g. slypanorama.com, CanonicalizeUrl redirects forever.
+  # Omit to use runtime default (slypanorama.com) or set: fly secrets set PHX_HOST=your.domain
   PORT = '8080'
 
 [http_service]
