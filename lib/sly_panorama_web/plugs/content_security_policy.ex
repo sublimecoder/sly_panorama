@@ -5,6 +5,9 @@ defmodule SlyPanoramaWeb.Plugs.ContentSecurityPolicy do
 
   Replaces Phoenix's minimal default so `script-src` / `frame-src` / `connect-src` explicitly
   allow reCAPTCHA (some platforms also send a stricter Report-Only policy at the edge).
+
+  `font-src` allows any `https:` origin (same idea as `img-src`) so webfonts from CDNs work
+  without listing every host.
   """
 
   import Plug.Conn
@@ -19,7 +22,7 @@ defmodule SlyPanoramaWeb.Plugs.ContentSecurityPolicy do
               "script-src 'self' 'unsafe-inline' #{@google_recaptcha}",
               "style-src 'self' 'unsafe-inline' #{@google_recaptcha}",
               "img-src 'self' data: blob: https:",
-              "font-src 'self' data:",
+              "font-src 'self' data: https:",
               "connect-src 'self' #{@google_recaptcha}",
               "frame-src 'self' #{@google_recaptcha_frames}",
               "manifest-src 'self'",

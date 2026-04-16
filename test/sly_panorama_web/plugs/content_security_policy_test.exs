@@ -17,5 +17,6 @@ defmodule SlyPanoramaWeb.Plugs.ContentSecurityPolicyTest do
     assert String.contains?(csp, "https://www.google.com")
     assert String.contains?(csp, "frame-src")
     assert String.contains?(csp, "https://recaptcha.google.com")
+    assert String.contains?(csp, "font-src 'self' data: https:")
   end
 end
