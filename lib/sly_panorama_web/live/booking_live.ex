@@ -35,6 +35,7 @@ defmodule SlyPanoramaWeb.BookingLive do
             class="space-y-1"
             phx-submit="save"
             phx-hook="RecaptchaV3"
+            data-recaptcha-site-key={Recaptcha.site_key()}
           >
             <.input field={@form[:name]} type="text" label="Name" required />
             <.input field={@form[:email]} type="email" label="Email" required />

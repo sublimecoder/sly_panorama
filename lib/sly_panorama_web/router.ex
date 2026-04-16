@@ -8,6 +8,7 @@ defmodule SlyPanoramaWeb.Router do
     plug :put_root_layout, html: {SlyPanoramaWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug SlyPanoramaWeb.Plugs.ContentSecurityPolicy
     plug :fetch_cookies
   end
 
