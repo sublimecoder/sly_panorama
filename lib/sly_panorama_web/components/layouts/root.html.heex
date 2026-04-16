@@ -98,11 +98,15 @@
 
     <footer class="border-t border-sly-accent/15 bg-sly-surface/95 px-4 py-12 text-center text-sly-ink">
       <div class="mx-auto flex max-w-6xl flex-col items-center gap-4">
-        <div
-          class="flex size-28 items-center justify-center rounded-full border-2 border-sly-accent/35 bg-gradient-to-br from-sly-bg to-sly-elevated text-xl font-bold tracking-tight text-sly-accent shadow-md shadow-black/40"
-          aria-hidden="true"
-        >
-          SP
+        <div class="size-28 shrink-0 overflow-hidden rounded-full border-2 border-sly-accent/35 shadow-md shadow-black/40">
+          <img
+            src="/images/profile.jpeg"
+            alt=""
+            width="112"
+            height="112"
+            class="h-full w-full object-cover"
+            decoding="async"
+          />
         </div>
         <p class="font-semibold text-sly-ink">Sly Panorama</p>
         <p class="text-sm text-sly-ink-dim">Copyright © <%= Date.utc_today().year %> — All rights reserved</p>

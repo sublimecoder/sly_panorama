@@ -157,12 +157,24 @@ defmodule SlyPanoramaWeb.BookingLive do
       {:ok, %{"success" => true, "score" => score, "action" => "booking"}} when score >= min_score ->
         case validate_booking(booking_params, services_params) do
           {:ok, _} ->
-            BookingEmail.send_booking_email(booking_params, services_params)
+            case BookingEmail.send_booking_email(booking_params, services_params) do
+              {:ok, _} ->
+                {:noreply,
+                 socket
+                 |> assign(:submitted, true)
+                 |> put_flash(:info, "Booking request submitted successfully!")}
 
-            {:noreply,
-             socket
-             |> assign(:submitted, true)
-             |> put_flash(:info, "Booking request submitted successfully!")}
+              {:error, reason} ->
+                require Logger
+                Logger.error(["booking email failed: ", inspect(reason)])
+
+                {:noreply,
+                 socket
+                 |> put_flash(
+                   :error,
+                   "We could not send your request by email. Please try again shortly or contact us directly."
+                 )}
+            end
 
           {:error, errors_kw, services_error} ->
             merged = Map.merge(booking_fields_blank(), booking_params)

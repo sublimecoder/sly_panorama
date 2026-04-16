@@ -68,18 +68,19 @@ defmodule SlyPanoramaWeb.SEO do
   @doc """
   Default share image (absolute URL).
 
-  Add `priv/static/images/og-share.jpg` (or change this path) when you have a card image.
+  Uses the same hero asset as the home page; replace the file under `priv/static/images/` if you
+  want a wider OG crop without changing the home layout.
   """
   def og_image_url do
-    canonical_url("/images/og-share.jpg")
+    canonical_url("/images/profile.jpeg")
   end
 
   @doc """
   SameAs URLs for Person JSON-LD (official / verified profiles).
 
-  Populate with your real profile URLs when ready.
+  Mirrors storefronts and socials from `SlyPanoramaWeb.ExternalLinks`.
   """
   def person_same_as do
-    []
+    SlyPanoramaWeb.ExternalLinks.person_same_as()
   end
 end

@@ -49,6 +49,7 @@ defmodule SlyPanorama.MixProject do
        compile: false,
        depth: 1},
       {:swoosh, "~> 1.16"},
+      {:gen_smtp, "~> 1.2"},
       {:finch, "~> 0.17"},
       {:hackney, "~> 1.20"},
       {:req, "~> 0.5"},

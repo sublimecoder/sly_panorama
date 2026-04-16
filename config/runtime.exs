@@ -116,21 +116,32 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # ## Configuring the mailer
+  # ## Mailer — Amazon SES (SendRawEmail API via Swoosh)
   #
-  # In production you need to configure the mailer to use a different adapter.
-  # Also, you may need to configure the Swoosh API client of your choice if you
-  # are not using SMTP. Here is an example of the configuration:
+  # Required: IAM user/role keys with `ses:SendRawEmail` on a verified identity (domain or address).
+  # Optional: `AWS_SESSION_TOKEN` if using temporary credentials.
   #
-      config :sly_panorama, SlyPanorama.Mailer,
-              adapter: Swoosh.Adapters.Sendgrid,
-              api_key: System.get_env("SENDGRID_API_KEY")
+  # Booking notifications also require:
+  #   * `BOOKING_EMAIL_FROM` — verified SES From (e.g. bookings@yourdomain.com)
+  #   * `BOOKING_EMAIL_TO` — destination inbox
+  #   * optional `BOOKING_EMAIL_FROM_NAME`
+  #
+  ses_region =
+    System.get_env("AWS_REGION") ||
+      System.get_env("AWS_DEFAULT_REGION") ||
+      raise "environment variable AWS_REGION (or AWS_DEFAULT_REGION) is missing for SES"
 
-  #
-  # For this example you need include a HTTP client required by Swoosh API client.
-  # Swoosh supports Hackney, Req and Finch out of the box:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Hackney
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  ses_access_key =
+    System.get_env("AWS_ACCESS_KEY_ID") ||
+      raise "environment variable AWS_ACCESS_KEY_ID is missing for SES"
+
+  ses_secret =
+    System.get_env("AWS_SECRET_ACCESS_KEY") ||
+      raise "environment variable AWS_SECRET_ACCESS_KEY is missing for SES"
+
+  config :sly_panorama, SlyPanorama.Mailer,
+    adapter: Swoosh.Adapters.AmazonSES,
+    region: ses_region,
+    access_key: ses_access_key,
+    secret: ses_secret
 end

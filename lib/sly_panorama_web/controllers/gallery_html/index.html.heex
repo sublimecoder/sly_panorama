@@ -7,12 +7,11 @@
   <section class="mx-auto mb-10 max-w-3xl space-y-4 text-center text-sly-ink">
     <h2 class="text-xl font-semibold text-sly-ink">Gallery</h2>
     <p class="text-sly-ink/90">
-      Still frames, set photography, and behind-the-scenes moments live here. Drop new files into
-      <code class="rounded bg-black/20 px-1.5 py-0.5 text-xs text-sly-ink/90">priv/static/images/gallery/</code>
-      and register them in <code class="rounded bg-black/20 px-1.5 py-0.5 text-xs text-sly-ink/90">SlyPanoramaWeb.GalleryController.get_images/0</code>.
+      A curated collection of Sly Panorama’s most captivating moments, both on and off camera. From high-quality
+      visuals to exclusive behind-the-scenes and candid shots that reveal the energy behind every scene.
     </p>
     <p class="text-sly-ink/90">
-      The grid and lightbox are ready; when the list is empty you will only see this message.
+      No explicit content is shown here. Full access lives behind a subscription for those who want more.
     </p>
   </section>
 
@@ -24,18 +23,19 @@
       </div>
     <% else %>
       <%= for {img, index} <- Enum.with_index(@images) do %>
-        <% {file, title} = img %>
+        <% {file, alt} = img %>
         <div
           data-gallery-item
           data-gallery-index={index}
           class="group cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-sly-surface/80 shadow-lg transition duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-xl"
         >
           <figure class="m-0">
-            <img src={"/images/gallery/#{file}"} alt={title} class="h-64 w-full object-cover transition duration-500 group-hover:opacity-95" />
+            <img
+              src={"/images/gallery/#{file}"}
+              alt={alt}
+              class="h-64 w-full object-cover transition duration-500 group-hover:opacity-95"
+            />
           </figure>
-          <div class="border-t border-white/10 p-4">
-            <h2 class="text-center text-base font-medium text-sly-ink">{title}</h2>
-          </div>
         </div>
       <% end %>
     <% end %>
@@ -47,7 +47,7 @@
     class="fixed inset-0 z-50 hidden bg-black/70 p-4 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="lightbox-title"
+    aria-label="Gallery image preview"
   >
     <div class="flex h-full w-full items-center justify-center">
     <div class="lightbox-content relative w-full max-w-5xl rounded-2xl border border-white/10 bg-sly-surface shadow-2xl">
@@ -72,7 +72,7 @@
         >
           <.icon name="hero-chevron-left-mini" class="size-5 shrink-0" /> Prev
         </button>
-        <h2 id="lightbox-title" class="mx-4 flex-1 text-center text-base font-semibold text-sly-ink sm:text-lg"></h2>
+        <div class="min-w-0 flex-1" />
         <button
           type="button"
           id="next-btn"

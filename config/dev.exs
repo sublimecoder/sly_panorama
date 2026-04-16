@@ -83,9 +83,5 @@ config :phoenix_live_view,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
 
-# Disable swoosh api client as it is only required for production adapters.
-# config :swoosh, :api_client, false
-
-      config :sly_panorama, SlyPanorama.Mailer,
-              adapter: Swoosh.Adapters.Sendgrid,
-              api_key: System.get_env("SENDGRID_API_KEY")
+# Swoosh uses Req in production (`config/prod.exs`). In dev the mailer stays `Local` from
+# `config/config.exs` — preview at `/dev/mailbox` when `dev_routes` is enabled.

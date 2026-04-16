@@ -13,12 +13,11 @@ function initGallery(root) {
 
   const lightbox = document.getElementById("lightbox")
   const lightboxImg = document.getElementById("lightbox-img")
-  const lightboxTitle = document.getElementById("lightbox-title")
   const closeBtn = document.getElementById("close-lightbox")
   const prevBtn = document.getElementById("prev-btn")
   const nextBtn = document.getElementById("next-btn")
 
-  if (!lightbox || !lightboxImg || !lightboxTitle || !closeBtn || !prevBtn || !nextBtn) {
+  if (!lightbox || !lightboxImg || !closeBtn || !prevBtn || !nextBtn) {
     return
   }
 
@@ -29,7 +28,6 @@ function initGallery(root) {
     const item = images[index]
     lightboxImg.src = item.src
     lightboxImg.alt = item.title
-    lightboxTitle.textContent = item.title
     lightbox.classList.remove("hidden")
   }
 

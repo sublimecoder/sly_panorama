@@ -7,6 +7,7 @@ defmodule SlyPanoramaWeb.PageController do
     # The home page is often custom made,
     # so skip the default app layout.
     conn
+    |> assign(:link_sections, SlyPanoramaWeb.ExternalLinks.link_sections())
     |> render(:home, layout: false)
   end
 
