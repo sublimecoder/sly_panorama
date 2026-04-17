@@ -11,6 +11,13 @@ defmodule SlyPanoramaWeb.BookingLive do
     ~H"""
     <div class="min-h-screen bg-gradient-to-b from-sly-bg to-sly-surface px-4 py-10 text-sly-ink sm:px-6">
       <div class="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-sly-surface/60 p-6 shadow-xl backdrop-blur-md sm:p-10">
+        <p
+          :if={msg = Phoenix.Flash.get(@flash, :error)}
+          class="mb-6 rounded-lg border border-sly-danger/40 bg-sly-danger-bg px-4 py-3 text-sm text-sly-ink"
+          role="alert"
+        >
+          {msg}
+        </p>
         <%= if @submitted do %>
           <h2 id="booking-thank-you" class="text-2xl font-bold text-sly-ink">Thank You!</h2>
           <p class="mt-4 text-sly-ink/90">Your request has been submitted successfully.</p>
@@ -157,46 +164,68 @@ defmodule SlyPanoramaWeb.BookingLive do
     verified = Recaptcha.verify(token, remote_ip)
 
     case verified do
-      {:ok, %{"success" => true, "score" => score, "action" => "booking"}} when score >= min_score ->
-        case validate_booking(booking_params, services_params) do
-          {:ok, _} ->
-            case BookingEmail.send_booking_email(booking_params, services_params) do
+      {:ok, %{"success" => true} = body} ->
+        # Google’s test keys / some responses omit `score` or `action`; production normally sends both.
+        score = Map.get(body, "score")
+        action = Map.get(body, "action", "booking")
+
+        score_ok? =
+          case score do
+            s when is_number(s) -> s >= min_score
+            nil -> true
+            _ -> false
+          end
+
+        action_ok? = action == "booking"
+
+        cond do
+          not score_ok? ->
+            {:noreply, put_flash(socket, :error, "Suspicious activity detected. Please try again.")}
+
+          not action_ok? ->
+            {:noreply, put_flash(socket, :error, "Suspicious activity detected. Please try again.")}
+
+          true ->
+            case validate_booking(booking_params, services_params) do
               {:ok, _} ->
+                case BookingEmail.send_booking_email(booking_params, services_params) do
+                  {:ok, _} ->
+                    {:noreply,
+                     socket
+                     |> assign(:submitted, true)
+                     |> put_flash(:info, "Booking request submitted successfully!")}
+
+                  {:error, reason} ->
+                    BookingEmail.log_delivery_failure(reason)
+
+                    {:noreply,
+                     socket
+                     |> put_flash(
+                       :error,
+                       "We could not send your request by email. Please try again shortly or contact us directly."
+                     )}
+                end
+
+              {:error, errors_kw, services_error} ->
+                merged = Map.merge(booking_fields_blank(), booking_params)
+
+                form =
+                  Phoenix.Component.to_form(merged,
+                    as: :booking,
+                    errors: errors_kw,
+                    action: :validate
+                  )
+
                 {:noreply,
                  socket
-                 |> assign(:submitted, true)
-                 |> put_flash(:info, "Booking request submitted successfully!")}
-
-              {:error, reason} ->
-                BookingEmail.log_delivery_failure(reason)
-
-                {:noreply,
-                 socket
-                 |> put_flash(
-                   :error,
-                   "We could not send your request by email. Please try again shortly or contact us directly."
-                 )}
+                 |> assign(:form, form)
+                 |> assign(:selected_services, services_params)
+                 |> assign(:services_error, services_error)}
             end
-
-          {:error, errors_kw, services_error} ->
-            merged = Map.merge(booking_fields_blank(), booking_params)
-
-            form =
-              Phoenix.Component.to_form(merged,
-                as: :booking,
-                errors: errors_kw,
-                action: :validate
-              )
-
-            {:noreply,
-             socket
-             |> assign(:form, form)
-             |> assign(:selected_services, services_params)
-             |> assign(:services_error, services_error)}
         end
 
       {:ok, _} ->
-        {:noreply, put_flash(socket, :error, "Suspicious activity detected. Please try again.")}
+        {:noreply, put_flash(socket, :error, "reCAPTCHA verification failed.")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "reCAPTCHA verification failed.")}

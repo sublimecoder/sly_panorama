@@ -23,9 +23,61 @@ if System.get_env("PHX_SERVER") do
          url: [host: "slypanorama.com", port: 443, scheme: "https"]
 end
 
+  # reCAPTCHA v3: in dev/test, fall back to Google's documented test keys when env is unset so
+  # `data-recaptcha-site-key` and `api.js?render=` work on localhost. Production must set real keys.
+  # https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
+  recaptcha_test_site_key = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+  recaptcha_test_secret_key = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+
+  recaptcha_site_key =
+    case System.get_env("RECAPTCHA_SITE_KEY") do
+      v when is_binary(v) ->
+        case String.trim(v) do
+          "" ->
+            if config_env() == :prod do
+              raise "environment variable RECAPTCHA_SITE_KEY is required in production"
+            else
+              recaptcha_test_site_key
+            end
+
+          trimmed ->
+            trimmed
+        end
+
+      _ ->
+        if config_env() == :prod do
+          raise "environment variable RECAPTCHA_SITE_KEY is required in production"
+        else
+          recaptcha_test_site_key
+        end
+    end
+
+  recaptcha_secret_key =
+    case System.get_env("RECAPTCHA_SECRET_KEY") do
+      v when is_binary(v) ->
+        case String.trim(v) do
+          "" ->
+            if config_env() == :prod do
+              raise "environment variable RECAPTCHA_SECRET_KEY is required in production"
+            else
+              recaptcha_test_secret_key
+            end
+
+          trimmed ->
+            trimmed
+        end
+
+      _ ->
+        if config_env() == :prod do
+          raise "environment variable RECAPTCHA_SECRET_KEY is required in production"
+        else
+          recaptcha_test_secret_key
+        end
+    end
+
   config :sly_panorama, SlyPanorama.Recaptcha,
-    site_key: System.get_env("RECAPTCHA_SITE_KEY"),
-    secret_key: System.get_env("RECAPTCHA_SECRET_KEY"),
+    site_key: recaptcha_site_key,
+    secret_key: recaptcha_secret_key,
     min_score: 0.5
 
 if config_env() == :prod do
