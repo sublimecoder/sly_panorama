@@ -124,8 +124,8 @@ if config_env() == :prod do
   # Optional: `AWS_SESSION_TOKEN` if using temporary credentials.
   #
   # Booking notifications also require:
-  #   * `BOOKING_EMAIL_FROM` — optional; defaults to booking@slypanorama.com (must be SES-verified
-  #     in this region, or override with another verified identity).
+  #   * `BOOKING_EMAIL_FROM` — optional; defaults to booking@slypanorama.com. Overrides are only
+  #     used for SES when the address is @slypanorama.com or @www.slypanorama.com (stale @proton.me etc. is ignored).
   #   * `BOOKING_EMAIL_TO` — destination inbox
   #   * optional `BOOKING_EMAIL_FROM_NAME`
   #

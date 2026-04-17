@@ -6,8 +6,9 @@ defmodule SlyPanorama.BookingEmail do
 
   * `BOOKING_EMAIL_TO` — inbox that receives submissions (required in prod if unset below fails closed only when deliver runs)
   * `BOOKING_EMAIL_FROM` — optional override for the **SES-verified** From address (same AWS region as `AWS_REGION`).
-    If unset or blank with the SES mailer, the default is **`booking@slypanorama.com`** (verify that address or your
-    whole domain in SES). Personal addresses like `@proton.me` only work as From if that exact address is a verified identity.
+    With the SES mailer, only addresses on **`slypanorama.com`** or **`www.slypanorama.com`** are accepted; any other value
+    (e.g. a leftover `@proton.me` secret) is **ignored** and **`booking@slypanorama.com`** is used instead. In dev/test
+    (local mailer), any non-empty `BOOKING_EMAIL_FROM` is still honored for previews.
   * Optional `BOOKING_EMAIL_FROM_NAME` — display name (defaults to \"Sly Panorama bookings\")
   """
 
@@ -27,8 +28,8 @@ defmodule SlyPanorama.BookingEmail do
   def log_delivery_failure(%{code: "MessageRejected", message: msg}) when is_binary(msg) do
     hint =
       if String.contains?(msg, "not verified") do
-        " Fix: In AWS SES (region must match AWS_REGION), verify `booking@slypanorama.com` (default From) " <>
-          "or your domain, or set BOOKING_EMAIL_FROM to another verified identity."
+        " Fix: In AWS SES (region must match AWS_REGION), verify the From address and (if still in sandbox) " <>
+          "`BOOKING_EMAIL_TO`. Remove or correct stale `BOOKING_EMAIL_FROM` secrets that are not @slypanorama.com."
       else
         ""
       end
@@ -169,10 +170,35 @@ defmodule SlyPanorama.BookingEmail do
     case System.get_env("BOOKING_EMAIL_FROM") do
       v when is_binary(v) ->
         v = String.trim(v)
-        if v != "", do: {:ok, v}, else: booking_from_default()
+
+        cond do
+          v == "" ->
+            booking_from_default()
+
+          local_mailer?() ->
+            {:ok, v}
+
+          allowed_ses_from_override?(v) ->
+            {:ok, v}
+
+          true ->
+            Logger.warning(
+              "Ignoring BOOKING_EMAIL_FROM=#{inspect(v)} for SES (not @slypanorama.com); using #{@default_ses_from}"
+            )
+
+            {:ok, @default_ses_from}
+        end
 
       _ ->
         booking_from_default()
+    end
+  end
+
+  defp allowed_ses_from_override?(email) do
+    case String.split(String.downcase(email), "@", parts: 2) do
+      [_local, "slypanorama.com"] -> true
+      [_local, "www.slypanorama.com"] -> true
+      _ -> false
     end
   end
 
