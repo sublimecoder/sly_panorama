@@ -5,14 +5,40 @@ defmodule SlyPanorama.BookingEmail do
   In production the mailer uses **Amazon SES** (`Swoosh.Adapters.AmazonSES`). Set:
 
   * `BOOKING_EMAIL_TO` — inbox that receives submissions (required in prod if unset below fails closed only when deliver runs)
-  * `BOOKING_EMAIL_FROM` — full **SES-verified** From address, e.g. `bookings@yourdomain.com` (required for SES)
+  * `BOOKING_EMAIL_FROM` — optional override for the **SES-verified** From address (same AWS region as `AWS_REGION`).
+    If unset or blank with the SES mailer, the default is **`booking@slypanorama.com`** (verify that address or your
+    whole domain in SES). Personal addresses like `@proton.me` only work as From if that exact address is a verified identity.
   * Optional `BOOKING_EMAIL_FROM_NAME` — display name (defaults to \"Sly Panorama bookings\")
   """
 
   alias SlyPanorama.Mailer
   import Swoosh.Email
 
+  require Logger
+
   @default_from_name "Sly Panorama bookings"
+
+  @default_ses_from "booking@slypanorama.com"
+
+  @doc """
+  Logs a failed `Mailer.deliver/1` result. For common SES `MessageRejected` / unverified From,
+  logs an operator hint (visitors still see a generic flash from the LiveView).
+  """
+  def log_delivery_failure(%{code: "MessageRejected", message: msg}) when is_binary(msg) do
+    hint =
+      if String.contains?(msg, "not verified") do
+        " Fix: In AWS SES (region must match AWS_REGION), verify `booking@slypanorama.com` (default From) " <>
+          "or your domain, or set BOOKING_EMAIL_FROM to another verified identity."
+      else
+        ""
+      end
+
+    Logger.error(["booking email failed (SES): ", msg, hint])
+  end
+
+  def log_delivery_failure(reason) do
+    Logger.error(["booking email failed: ", inspect(reason)])
+  end
 
   @doc """
   Sends the booking request email. Returns `{:ok, metadata}` or `{:error, reason}` from `Mailer.deliver/1`.
@@ -135,13 +161,7 @@ defmodule SlyPanorama.BookingEmail do
 
   defp from_tuple do
     name = System.get_env("BOOKING_EMAIL_FROM_NAME") || @default_from_name
-
-    address =
-      case booking_from_address() do
-        {:ok, addr} -> addr
-        :error -> raise "BOOKING_EMAIL_FROM must be set to a verified SES sender address (e.g. bookings@yourdomain.com)"
-      end
-
+    {:ok, address} = booking_from_address()
     {name, address}
   end
 
@@ -149,15 +169,17 @@ defmodule SlyPanorama.BookingEmail do
     case System.get_env("BOOKING_EMAIL_FROM") do
       v when is_binary(v) ->
         v = String.trim(v)
-        if v != "", do: {:ok, v}, else: maybe_dev_from()
+        if v != "", do: {:ok, v}, else: booking_from_default()
 
       _ ->
-        maybe_dev_from()
+        booking_from_default()
     end
   end
 
-  defp maybe_dev_from do
-    if local_mailer?(), do: {:ok, "bookings@localhost"}, else: :error
+  defp booking_from_default do
+    if local_mailer?(),
+      do: {:ok, "bookings@localhost"},
+      else: {:ok, @default_ses_from}
   end
 
   defp booking_to do

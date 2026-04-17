@@ -168,8 +168,7 @@ defmodule SlyPanoramaWeb.BookingLive do
                  |> put_flash(:info, "Booking request submitted successfully!")}
 
               {:error, reason} ->
-                require Logger
-                Logger.error(["booking email failed: ", inspect(reason)])
+                BookingEmail.log_delivery_failure(reason)
 
                 {:noreply,
                  socket
