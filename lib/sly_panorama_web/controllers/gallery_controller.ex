@@ -65,7 +65,9 @@ defmodule SlyPanoramaWeb.GalleryController do
     )
     |> assign(
       :page_keywords,
-      "Sly Panorama, adult performer, content creator, gallery, XXX, photos"
+      SlyPanoramaWeb.SEO.append_meta_keywords(
+        "Sly Panorama, adult performer, content creator, gallery, XXX, photos"
+      )
     )
   end
 end

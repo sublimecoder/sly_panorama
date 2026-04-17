@@ -13,6 +13,15 @@ defmodule SlyPanoramaWeb.SEO do
 
   def default_description, do: @default_description
 
+  @meta_keyword_handles "slypanorama, sly_panorama"
+
+  @doc """
+  Appends branded search variants for `<meta name=\"keywords\">` (one-word domain + underscore handle).
+  """
+  def append_meta_keywords(keywords) when is_binary(keywords) do
+    keywords <> ", " <> @meta_keyword_handles
+  end
+
   @doc """
   Public origin (`https://your-domain.com`) for SEO, sitemaps, Open Graph, and manifests.
 

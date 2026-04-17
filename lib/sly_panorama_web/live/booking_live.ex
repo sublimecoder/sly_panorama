@@ -132,7 +132,9 @@ defmodule SlyPanoramaWeb.BookingLive do
      )
      |> assign(
        :page_keywords,
-       "Sly Panorama booking, male adult performer, paid shoots, collab scenes, adult content, XXX performer, scene booking"
+       SlyPanoramaWeb.SEO.append_meta_keywords(
+         "Sly Panorama booking, male adult performer, paid shoots, collab scenes, adult content, XXX performer, scene booking"
+       )
      )
      |> assign(:canonical_url, SlyPanoramaWeb.SEO.canonical_url("/booking"))
      |> assign(:og_image_url, SlyPanoramaWeb.SEO.og_image_url())}

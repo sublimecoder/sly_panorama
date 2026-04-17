@@ -30,6 +30,13 @@ defmodule SlyPanoramaWeb.SEOTest do
     end
   end
 
+  describe "append_meta_keywords/1" do
+    test "appends slypanorama and sly_panorama" do
+      assert SlyPanoramaWeb.SEO.append_meta_keywords("foo, bar") ==
+               "foo, bar, slypanorama, sly_panorama"
+    end
+  end
+
   describe "same_site_host?/2" do
     test "treats www and apex as equivalent" do
       assert SlyPanoramaWeb.SEO.same_site_host?("www.example.com", "example.com")
