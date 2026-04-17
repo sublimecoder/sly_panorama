@@ -11,13 +11,6 @@ defmodule SlyPanoramaWeb.BookingLive do
     ~H"""
     <div class="min-h-screen bg-gradient-to-b from-sly-bg to-sly-surface px-4 py-10 text-sly-ink sm:px-6">
       <div class="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-sly-surface/60 p-6 shadow-xl backdrop-blur-md sm:p-10">
-        <p
-          :if={msg = Phoenix.Flash.get(@flash, :error)}
-          class="mb-6 rounded-lg border border-sly-danger/40 bg-sly-danger-bg px-4 py-3 text-sm text-sly-ink"
-          role="alert"
-        >
-          {msg}
-        </p>
         <%= if @submitted do %>
           <h2 id="booking-thank-you" class="text-2xl font-bold text-sly-ink">Thank You!</h2>
           <p class="mt-4 text-sly-ink/90">Your request has been submitted successfully.</p>
@@ -89,6 +82,16 @@ defmodule SlyPanoramaWeb.BookingLive do
             </fieldset>
 
             <p class="mt-6 text-sm text-sly-ink/90">Thank you for taking the time to fill out this form.</p>
+
+            <p
+              :if={msg = Phoenix.Flash.get(@flash, :error)}
+              id="booking-form-flash"
+              class="mt-6 rounded-lg border border-sly-danger/40 bg-sly-danger-bg px-4 py-3 text-sm text-sly-ink scroll-mt-24"
+              role="alert"
+              tabindex="-1"
+            >
+              {msg}
+            </p>
 
             <input type="hidden" name="recaptcha_token" id="recaptcha_token" value="" />
             <div class="mt-6">
@@ -196,14 +199,9 @@ defmodule SlyPanoramaWeb.BookingLive do
                      |> put_flash(:info, "Booking request submitted successfully!")}
 
                   {:error, reason} ->
-                    BookingEmail.log_delivery_failure(reason)
-
                     {:noreply,
                      socket
-                     |> put_flash(
-                       :error,
-                       "We could not send your request by email. Please try again shortly or contact us directly."
-                     )}
+                     |> put_flash(:error, BookingEmail.mail_delivery_user_message(reason))}
                 end
 
               {:error, errors_kw, services_error} ->

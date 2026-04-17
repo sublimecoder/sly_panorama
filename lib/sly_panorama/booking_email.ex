@@ -10,6 +10,10 @@ defmodule SlyPanorama.BookingEmail do
     (e.g. a leftover `@proton.me` secret) is **ignored** and **`booking@slypanorama.com`** is used instead. In dev/test
     (local mailer), any non-empty `BOOKING_EMAIL_FROM` is still honored for previews.
   * Optional `BOOKING_EMAIL_FROM_NAME` — display name (defaults to \"Sly Panorama bookings\")
+
+  **Production troubleshooting:** on failure, logs include `booking email failed` plus SES `code`/`message`
+  and `context to=` / `context from=` (grep Fly logs). Typical fixes: verify **From** in SES, verify **To** if the
+  account is still in the **SES sandbox**, and confirm `AWS_REGION` matches where identities were created.
   """
 
   alias SlyPanorama.Mailer
@@ -22,23 +26,74 @@ defmodule SlyPanorama.BookingEmail do
   @default_ses_from "booking@slypanorama.com"
 
   @doc """
-  Logs a failed `Mailer.deliver/1` result. For common SES `MessageRejected` / unverified From,
-  logs an operator hint (visitors still see a generic flash from the LiveView).
+  Human-safe flash text for a failed `Mailer.deliver/1` (no secrets or raw AWS payloads).
   """
-  def log_delivery_failure(%{code: "MessageRejected", message: msg}) when is_binary(msg) do
+  def mail_delivery_user_message(%{code: "MessageRejected", message: msg}) when is_binary(msg) do
+    if String.contains?(msg, "not verified") do
+      "We couldn’t deliver your booking by email yet—the mail system still needs a verified sender or recipient in AWS. Please use the contact links on the home page for now."
+    else
+      mail_delivery_user_message_default()
+    end
+  end
+
+  def mail_delivery_user_message(%{code: "Throttling"}), do: mail_delivery_user_message_default()
+
+  def mail_delivery_user_message(%{code: "AccessDenied"}),
+    do: "We couldn’t deliver your booking by email (mail permissions). Please try again later or use the contact links on the home page."
+
+  def mail_delivery_user_message(_), do: mail_delivery_user_message_default()
+
+  defp mail_delivery_user_message_default do
+    "We could not send your request by email. Please try again shortly or contact us directly."
+  end
+
+  @doc false
+  def log_delivery_failure(reason), do: log_delivery_failure(reason, %{})
+
+  def log_delivery_failure(%{code: "MessageRejected", message: msg} = _reason, meta)
+      when is_binary(msg) do
     hint =
       if String.contains?(msg, "not verified") do
-        " Fix: In AWS SES (region must match AWS_REGION), verify the From address and (if still in sandbox) " <>
-          "`BOOKING_EMAIL_TO`. Remove or correct stale `BOOKING_EMAIL_FROM` secrets that are not @slypanorama.com."
+        " Fix: In AWS SES (same region as AWS_REGION), verify `booking@slypanorama.com` (or your From) and, if the account is still in the SES sandbox, verify `BOOKING_EMAIL_TO` as well."
       else
         ""
       end
 
-    Logger.error(["booking email failed (SES): ", msg, hint])
+    Logger.error([
+      "booking email failed (SES MessageRejected): ",
+      msg,
+      hint,
+      format_mail_meta(meta)
+    ])
   end
 
-  def log_delivery_failure(reason) do
-    Logger.error(["booking email failed: ", inspect(reason)])
+  def log_delivery_failure(%{code: code, message: msg} = _reason, meta)
+      when is_binary(code) and is_binary(msg) do
+    Logger.error([
+      "booking email failed (SES ",
+      code,
+      "): ",
+      msg,
+      format_mail_meta(meta)
+    ])
+  end
+
+  def log_delivery_failure(reason, meta) do
+    Logger.error(["booking email failed: ", inspect(reason), format_mail_meta(meta)])
+  end
+
+  defp format_mail_meta(meta) when meta == %{}, do: ""
+
+  defp format_mail_meta(meta) do
+    to = Map.get(meta, :to)
+    from = Map.get(meta, :from)
+
+    case {to, from} do
+      {nil, nil} -> ""
+      {t, nil} -> [" context to=", inspect(t)]
+      {nil, f} -> [" context from=", inspect(f)]
+      {t, f} -> [" context to=", inspect(t), " from=", inspect(f)]
+    end
   end
 
   @doc """
@@ -67,7 +122,16 @@ defmodule SlyPanorama.BookingEmail do
       |> html_body(html)
       |> maybe_put_aws_session_token()
 
-    Mailer.deliver(email)
+    meta = %{to: to, from: from_address}
+
+    case Mailer.deliver(email) do
+      {:ok, _} = ok ->
+        ok
+
+      {:error, reason} = err ->
+        log_delivery_failure(reason, meta)
+        err
+    end
   end
 
   defp subject_line(booking) do
