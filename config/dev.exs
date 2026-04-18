@@ -83,5 +83,5 @@ config :phoenix_live_view,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
 
-# Swoosh uses Req in production (`config/prod.exs`). In dev the mailer stays `Local` from
-# `config/config.exs` — preview at `/dev/mailbox` when `dev_routes` is enabled.
+# In dev the mailer stays `Local` from `config/config.exs` — preview at `/dev/mailbox` when `dev_routes` is enabled.
+# Production uses SMTP2GO via `runtime.exs`.

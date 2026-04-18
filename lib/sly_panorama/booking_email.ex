@@ -2,18 +2,20 @@ defmodule SlyPanorama.BookingEmail do
   @moduledoc """
   Builds and delivers booking notification mail via `SlyPanorama.Mailer`.
 
-  In production the mailer uses **Amazon SES** (`Swoosh.Adapters.AmazonSES`). Set:
+  In production the mailer uses **SMTP2GO** (`Swoosh.Adapters.SMTP`). Set:
 
-  * `BOOKING_EMAIL_TO` — inbox that receives submissions (required in prod if unset below fails closed only when deliver runs)
-  * `BOOKING_EMAIL_FROM` — optional override for the **SES-verified** From address (same AWS region as `AWS_REGION`).
-    With the SES mailer, only addresses on **`slypanorama.com`** or **`www.slypanorama.com`** are accepted; any other value
-    (e.g. a leftover `@proton.me` secret) is **ignored** and **`booking@slypanorama.com`** is used instead. In dev/test
-    (local mailer), any non-empty `BOOKING_EMAIL_FROM` is still honored for previews.
+  * `SMTP2GO_USERNAME` / `SMTP2GO_PASSWORD` — SMTP credentials from the SMTP2GO dashboard
+  * Optional `SMTP2GO_RELAY` (default `mail.smtp2go.com`) and `SMTP2GO_PORT` (default `587`)
+  * `BOOKING_EMAIL_TO` — inbox that receives submissions (required in prod when mail is sent)
+  * `BOOKING_EMAIL_FROM` — optional override for the From address. In production SMTP, only addresses on
+    **`slypanorama.com`** or **`www.slypanorama.com`** are accepted; any other value is ignored and
+    **`booking@slypanorama.com`** is used instead. In dev/test (local mailer), any non-empty `BOOKING_EMAIL_FROM`
+    is honored for previews.
   * Optional `BOOKING_EMAIL_FROM_NAME` — display name (defaults to \"Sly Panorama bookings\")
 
-  **Production troubleshooting:** on failure, logs include `booking email failed` plus SES `code`/`message`
-  and `context to=` / `context from=` (grep Fly logs). Typical fixes: verify **From** in SES, verify **To** if the
-  account is still in the **SES sandbox**, and confirm `AWS_REGION` matches where identities were created.
+  **Production troubleshooting:** on failure, logs include `booking email failed` plus the error from the SMTP client
+  and `context to=` / `context from=` (grep Fly logs). Typical causes: wrong SMTP credentials, blocked port,
+  or From address not allowed for your SMTP2GO / domain setup.
   """
 
   alias SlyPanorama.Mailer
@@ -23,24 +25,11 @@ defmodule SlyPanorama.BookingEmail do
 
   @default_from_name "Sly Panorama bookings"
 
-  @default_ses_from "booking@slypanorama.com"
+  @default_booking_from "booking@slypanorama.com"
 
   @doc """
-  Human-safe flash text for a failed `Mailer.deliver/1` (no secrets or raw AWS payloads).
+  Human-safe flash text for a failed `Mailer.deliver/1` (no secrets or raw provider payloads).
   """
-  def mail_delivery_user_message(%{code: "MessageRejected", message: msg}) when is_binary(msg) do
-    if String.contains?(msg, "not verified") do
-      "We couldn’t deliver your booking by email yet—the mail system still needs a verified sender or recipient in AWS. Please use the contact links on the home page for now."
-    else
-      mail_delivery_user_message_default()
-    end
-  end
-
-  def mail_delivery_user_message(%{code: "Throttling"}), do: mail_delivery_user_message_default()
-
-  def mail_delivery_user_message(%{code: "AccessDenied"}),
-    do: "We couldn’t deliver your booking by email (mail permissions). Please try again later or use the contact links on the home page."
-
   def mail_delivery_user_message(_), do: mail_delivery_user_message_default()
 
   defp mail_delivery_user_message_default do
@@ -50,27 +39,10 @@ defmodule SlyPanorama.BookingEmail do
   @doc false
   def log_delivery_failure(reason), do: log_delivery_failure(reason, %{})
 
-  def log_delivery_failure(%{code: "MessageRejected", message: msg} = _reason, meta)
-      when is_binary(msg) do
-    hint =
-      if String.contains?(msg, "not verified") do
-        " Fix: In AWS SES (same region as AWS_REGION), verify `booking@slypanorama.com` (or your From) and, if the account is still in the SES sandbox, verify `BOOKING_EMAIL_TO` as well."
-      else
-        ""
-      end
-
-    Logger.error([
-      "booking email failed (SES MessageRejected): ",
-      msg,
-      hint,
-      format_mail_meta(meta)
-    ])
-  end
-
   def log_delivery_failure(%{code: code, message: msg} = _reason, meta)
       when is_binary(code) and is_binary(msg) do
     Logger.error([
-      "booking email failed (SES ",
+      "booking email failed (",
       code,
       "): ",
       msg,
@@ -120,7 +92,6 @@ defmodule SlyPanorama.BookingEmail do
       |> subject(subject_line(booking))
       |> text_body(text)
       |> html_body(html)
-      |> maybe_put_aws_session_token()
 
     meta = %{to: to, from: from_address}
 
@@ -242,15 +213,15 @@ defmodule SlyPanorama.BookingEmail do
           local_mailer?() ->
             {:ok, v}
 
-          allowed_ses_from_override?(v) ->
+          allowed_booking_from_domain?(v) ->
             {:ok, v}
 
           true ->
             Logger.warning(
-              "Ignoring BOOKING_EMAIL_FROM=#{inspect(v)} for SES (not @slypanorama.com); using #{@default_ses_from}"
+              "Ignoring BOOKING_EMAIL_FROM=#{inspect(v)} for production SMTP (not @slypanorama.com); using #{@default_booking_from}"
             )
 
-            {:ok, @default_ses_from}
+            {:ok, @default_booking_from}
         end
 
       _ ->
@@ -258,7 +229,7 @@ defmodule SlyPanorama.BookingEmail do
     end
   end
 
-  defp allowed_ses_from_override?(email) do
+  defp allowed_booking_from_domain?(email) do
     case String.split(String.downcase(email), "@", parts: 2) do
       [_local, "slypanorama.com"] -> true
       [_local, "www.slypanorama.com"] -> true
@@ -269,7 +240,7 @@ defmodule SlyPanorama.BookingEmail do
   defp booking_from_default do
     if local_mailer?(),
       do: {:ok, "bookings@localhost"},
-      else: {:ok, @default_ses_from}
+      else: {:ok, @default_booking_from}
   end
 
   defp booking_to do
@@ -295,17 +266,6 @@ defmodule SlyPanorama.BookingEmail do
   end
 
   defp raise_missing!(var) do
-    raise "#{var} must be set for the configured mailer (Amazon SES in production)"
-  end
-
-  defp maybe_put_aws_session_token(email) do
-    case System.get_env("AWS_SESSION_TOKEN") do
-      token when is_binary(token) ->
-        token = String.trim(token)
-        if token != "", do: put_provider_option(email, :security_token, token), else: email
-
-      _ ->
-        email
-    end
+    raise "#{var} must be set for the configured mailer (production SMTP)"
   end
 end

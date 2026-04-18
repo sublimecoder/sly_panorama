@@ -11,7 +11,7 @@ config :sly_panorama, SlyPanoramaWeb.Endpoint,
   force_ssl: [rewrite_on: [:x_forwarded_proto]],
   check_origin: ["//slypanorama.com", "//www.slypanorama.com"]
 
-# Configures Swoosh API Client
+# Req client (used by some Swoosh adapters; production mail uses SMTP2GO via `Swoosh.Adapters.SMTP`).
 config :swoosh, api_client: Swoosh.ApiClient.Req
 
 #disable email preview being served in production

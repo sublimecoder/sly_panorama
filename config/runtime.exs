@@ -170,33 +170,53 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # ## Mailer — Amazon SES (SendRawEmail API via Swoosh)
+  # ## Mailer — SMTP2GO (Swoosh SMTP adapter)
   #
-  # Required: IAM user/role keys with `ses:SendRawEmail` on a verified identity (domain or address).
-  # Optional: `AWS_SESSION_TOKEN` if using temporary credentials.
+  # Create SMTP credentials in the SMTP2GO dashboard. Required:
+  #   * `SMTP2GO_USERNAME`
+  #   * `SMTP2GO_PASSWORD`
+  # Optional overrides:
+  #   * `SMTP2GO_RELAY` — default mail.smtp2go.com
+  #   * `SMTP2GO_PORT` — default 587 (STARTTLS)
   #
   # Booking notifications also require:
-  #   * `BOOKING_EMAIL_FROM` — optional; defaults to booking@slypanorama.com. Overrides are only
-  #     used for SES when the address is @slypanorama.com or @www.slypanorama.com (stale @proton.me etc. is ignored).
   #   * `BOOKING_EMAIL_TO` — destination inbox
+  #   * `BOOKING_EMAIL_FROM` — optional; must be @slypanorama.com or @www.slypanorama.com in production
   #   * optional `BOOKING_EMAIL_FROM_NAME`
   #
-  ses_region =
-    System.get_env("AWS_REGION") ||
-      System.get_env("AWS_DEFAULT_REGION") ||
-      raise "environment variable AWS_REGION (or AWS_DEFAULT_REGION) is missing for SES"
+  smtp_username =
+    System.get_env("SMTP2GO_USERNAME") ||
+      raise "environment variable SMTP2GO_USERNAME is missing for SMTP2GO mail"
 
-  ses_access_key =
-    System.get_env("AWS_ACCESS_KEY_ID") ||
-      raise "environment variable AWS_ACCESS_KEY_ID is missing for SES"
+  smtp_password =
+    System.get_env("SMTP2GO_PASSWORD") ||
+      raise "environment variable SMTP2GO_PASSWORD is missing for SMTP2GO mail"
 
-  ses_secret =
-    System.get_env("AWS_SECRET_ACCESS_KEY") ||
-      raise "environment variable AWS_SECRET_ACCESS_KEY is missing for SES"
+  smtp_relay = System.get_env("SMTP2GO_RELAY") || "mail.smtp2go.com"
+
+  smtp_port =
+    case System.get_env("SMTP2GO_PORT") do
+      nil ->
+        587
+
+      v ->
+        case Integer.parse(String.trim(v)) do
+          {port, _} when port > 0 and port < 65536 ->
+            port
+
+          _ ->
+            raise "environment variable SMTP2GO_PORT must be a valid TCP port number"
+        end
+    end
 
   config :sly_panorama, SlyPanorama.Mailer,
-    adapter: Swoosh.Adapters.AmazonSES,
-    region: ses_region,
-    access_key: ses_access_key,
-    secret: ses_secret
+    adapter: Swoosh.Adapters.SMTP,
+    relay: smtp_relay,
+    username: smtp_username,
+    password: smtp_password,
+    port: smtp_port,
+    ssl: false,
+    tls: :always,
+    auth: :always,
+    retries: 2
 end
