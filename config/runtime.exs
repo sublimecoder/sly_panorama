@@ -211,10 +211,12 @@ if config_env() == :prod do
 
   # gen_smtp’s built-in `tls_options` only set old TLS versions; on OTP 26+ the default SSL
   # client behaviour needs a CA bundle and SNI or STARTTLS fails with `:tls_failed`.
+  # Use `:public_key.cacerts_get/0` (OTP 25.1+) — not `Certifi`, which is not loaded when this
+  # file runs under the release `Config.Reader` and would raise UndefinedFunctionError.
   smtp_tls_options = [
     versions: [:"tlsv1.2", :"tlsv1.3"],
     verify: :verify_peer,
-    cacerts: Certifi.cacerts(),
+    cacerts: :public_key.cacerts_get(),
     depth: 99,
     server_name_indication: String.to_charlist(smtp_relay),
     customize_hostname_check: [

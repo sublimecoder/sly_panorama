@@ -50,7 +50,6 @@ defmodule SlyPanorama.MixProject do
        depth: 1},
       {:swoosh, "~> 1.16"},
       {:gen_smtp, "~> 1.2"},
-      {:certifi, "~> 2.15"},
       {:finch, "~> 0.17"},
       {:hackney, "~> 1.20"},
       {:req, "~> 0.5"},
