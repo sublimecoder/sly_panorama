@@ -176,7 +176,7 @@ if config_env() == :prod do
   #   * `SMTP2GO_USERNAME`
   #   * `SMTP2GO_PASSWORD`
   # Optional overrides:
-  #   * `SMTP2GO_RELAY` — default mail.smtp2go.com
+  #   * `SMTP2GO_RELAY` — default mail.smtp2go.com (keep a hostname, not an IP, for TLS)
   #   * `SMTP2GO_PORT` — default 587 (STARTTLS)
   #
   # Booking notifications also require:
@@ -209,6 +209,19 @@ if config_env() == :prod do
         end
     end
 
+  # gen_smtp’s built-in `tls_options` only set old TLS versions; on OTP 26+ the default SSL
+  # client behaviour needs a CA bundle and SNI or STARTTLS fails with `:tls_failed`.
+  smtp_tls_options = [
+    versions: [:"tlsv1.2", :"tlsv1.3"],
+    verify: :verify_peer,
+    cacerts: Certifi.cacerts(),
+    depth: 99,
+    server_name_indication: String.to_charlist(smtp_relay),
+    customize_hostname_check: [
+      match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+    ]
+  ]
+
   config :sly_panorama, SlyPanorama.Mailer,
     adapter: Swoosh.Adapters.SMTP,
     relay: smtp_relay,
@@ -217,6 +230,7 @@ if config_env() == :prod do
     port: smtp_port,
     ssl: false,
     tls: :always,
+    tls_options: smtp_tls_options,
     auth: :always,
     retries: 2
 end
